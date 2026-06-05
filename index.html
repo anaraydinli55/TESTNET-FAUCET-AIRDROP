@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Testnet-Faucet-Airdrop Takip</title>
+    <style>
+        /* Genel Stil Ayarları */
+        body {
+            background-color: black;
+            color: white;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding-top: 60px; /* Header için boşluk */
+            padding-bottom: 50px; /* Footer için boşluk */
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Sabit Üst Menü */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: #111;
+            padding: 10px 0;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            z-index: 1000;
+            border-bottom: 1px solid #333;
+        }
+
+        button.nav-btn {
+            background-color: #222;
+            color: white;
+            border: 1px solid #444;
+            padding: 8px 15px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        button.nav-btn:hover {
+            background-color: #333;
+        }
+
+        /* Sayfa İçeriği */
+        .container {
+            width: 90%;
+            max-width: 600px;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .page-title {
+            color: lightskyblue;
+            font-weight: bold;
+            font-size: 24px;
+            margin-bottom: 20px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .list-container {
+            text-align: left;
+            margin-top: 20px;
+        }
+
+        .item {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-bottom: 1px solid #222;
+        }
+
+        .item-name {
+            color: lightskyblue;
+            font-weight: bold;
+            display: block;
+            font-size: 18px;
+        }
+
+        .item-url {
+            color: white;
+            font-weight: bold;
+            text-decoration: none;
+            word-break: break-all;
+        }
+
+        .item-url:hover {
+            text-decoration: underline;
+        }
+
+        /* Admin Paneli Modal */
+        #admin-panel {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #1a1a1a;
+            padding: 20px;
+            border: 2px solid lightskyblue;
+            border-radius: 10px;
+            z-index: 2000;
+            width: 300px;
+        }
+
+        #admin-panel input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            box-sizing: border-box;
+            background: #000;
+            border: 1px solid #444;
+            color: white;
+        }
+
+        #admin-panel button {
+            width: 100%;
+            padding: 10px;
+            background-color: lightskyblue;
+            color: black;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* Footer */
+        footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            text-align: center;
+            background-color: #000;
+            padding: 10px 0;
+            font-size: 12px;
+            color: #777;
+        }
+
+        /* Ana Giriş Butonları */
+        .home-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-top: 50px;
+        }
+
+        .big-btn {
+            padding: 20px;
+            font-size: 20px;
+            background-color: #111;
+            color: lightskyblue;
+            border: 2px solid lightskyblue;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <header id="main-nav" class="hidden">
+        <button class="nav-btn" onclick="showPage('home')">ANA SAYFA</button>
+        <button class="nav-btn" id="btn-opt1" onclick="showPage('testnets')">TESTNETLER</button>
+        <button class="nav-btn" id="btn-opt2" onclick="showPage('faucets')">FAUCETLER</button>
+        <button class="nav-btn" id="btn-opt3" onclick="showPage('airdrops')">AIRDROPLAR</button>
+    </header>
+
+    <div class="container" id="home-page">
+        <h1 style="color: lightskyblue;">HOŞ GELDİNİZ</h1>
+        <div class="home-buttons">
+            <button class="big-btn" onclick="showPage('testnets')">TESTNETLER</button>
+            <button class="big-btn" onclick="showPage('faucets')">FAUCETLER</button>
+            <button class="big-btn" onclick="showPage('airdrops')">AIRDROPLAR</button>
+        </div>
+    </div>
+
+    <div class="container hidden" id="content-page">
+        <div id="page-title-text" class="page-title" onclick="handleTitleClick()">BAŞLIK</div>
+        <div id="list-display" class="list-container"></div>
+    </div>
+
+    <!-- Admin Paneli -->
+    <div id="admin-panel">
+        <h3 style="color: lightskyblue; margin-top:0;">Yeni Veri Ekle</h3>
+        <input type="text" id="input-name" placeholder="İsim Girin">
+        <input type="text" id="input-url" placeholder="URL Girin (https://...)">
+        <button onclick="saveData()">ELAVE ET</button>
+        <button onclick="closeAdmin()" style="background: #444; color: white; margin-top: 5px;">KAPAT</button>
+    </div>
+
+    <footer>
+        this page designed by Anar Aydinli
+    </footer>
+
+    <script>
+        let currentPage = 'home';
+        let clickCount = 0;
+        let lastClickTime = 0;
+
+        // Sayfa Değiştirme Fonksiyonu
+        function showPage(pageId) {
+            currentPage = pageId;
+            document.getElementById('home-page').classList.add('hidden');
+            document.getElementById('content-page').classList.add('hidden');
+            document.getElementById('main-nav').classList.remove('hidden');
+
+            if (pageId === 'home') {
+                document.getElementById('home-page').classList.remove('hidden');
+                document.getElementById('main-nav').classList.add('hidden');
+            } else {
+                document.getElementById('content-page').classList.remove('hidden');
+                const title = document.getElementById('page-title-text');
+                title.innerText = pageId.toUpperCase();
+                
+                // Navigasyon butonlarını güncelle
+                updateNavButtons(pageId);
+                renderList();
+            }
+        }
+
+        function updateNavButtons(activePage) {
+            const b1 = document.getElementById('btn-opt1');
+            const b2 = document.getElementById('btn-opt2');
+            const b3 = document.getElementById('btn-opt3');
+
+            if (activePage === 'testnets') {
+                b1.style.display = 'none';
+                b2.style.display = 'inline-block'; b2.innerText = 'FAUCETLER';
+                b3.style.display = 'inline-block'; b3.innerText = 'AIRDROPLAR';
+            } else if (activePage === 'faucets') {
+                b1.style.display = 'inline-block'; b1.innerText = 'TESTNETLER';
+                b2.style.display = 'none';
+                b3.style.display = 'inline-block'; b3.innerText = 'AIRDROPLAR';
+            } else if (activePage === 'airdrops') {
+                b1.style.display = 'inline-block'; b1.innerText = 'TESTNETLER';
+                b2.style.display = 'inline-block'; b2.innerText = 'FAUCETLER';
+                b3.style.display = 'none';
+            }
+        }
+
+        // Gizli Admin Paneli Tetikleyici
+        function handleTitleClick() {
+            const now = Date.now();
+            if (now - lastClickTime > 5000) {
+                clickCount = 1;
+            } else {
+                clickCount++;
+            }
+            lastClickTime = now;
+
+            if (clickCount === 5) {
+                const pass = prompt("Admin Kodunu Girin:");
+                if (pass === "2026") {
+                    document.getElementById('admin-panel').style.display = 'block';
+                } else {
+                    alert("Hatalı Kod!");
+                }
+                clickCount = 0;
+            }
+        }
+
+        function closeAdmin() {
+            document.getElementById('admin-panel').style.display = 'none';
+        }
+
+        // Veri Kaydetme
+        function saveData() {
+            const name = document.getElementById('input-name').value;
+            const url = document.getElementById('input-url').value;
+
+            if (!name || !url) {
+                alert("Lütfen tüm alanları doldurun!");
+                return;
+            }
+
+            const newItem = { name, url };
+            let data = JSON.parse(localStorage.getItem(currentPage)) || [];
+            data.push(newItem);
+            localStorage.setItem(currentPage, JSON.stringify(data));
+
+            document.getElementById('input-name').value = '';
+            document.getElementById('input-url').value = '';
+            
+            renderList();
+            alert("Başarıyla eklendi!");
+        }
+
+        // Verileri Listeleme
+        function renderList() {
+            const listDiv = document.getElementById('list-display');
+            listDiv.innerHTML = '';
+            let data = JSON.parse(localStorage.getItem(currentPage)) || [];
+
+            data.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'item';
+                div.innerHTML = `
+                    <span class="item-name">${item.name}</span>
+                    <a href="${item.url}" target="_blank" class="item-url">${item.url}</a>
+                `;
+                listDiv.appendChild(div);
+            });
+        }
+    </script>
+</body>
+</html>
